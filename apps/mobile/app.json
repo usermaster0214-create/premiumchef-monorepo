@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "PremiumChef Operacional",
+    "slug": "premiumchef-operacional",
+    "version": "1.0.0",
+    "orientation": "default",
+    "entryPoint": "./App.js",
+    "platforms": ["ios", "android", "web"],
+    "ios": { "bundleIdentifier": "br.com.premiumchef.operacional" },
+    "android": { "package": "br.com.premiumchef.operacional" },
+    "extra": {
+      "apiUrl": "${EXPO_PUBLIC_API_URL}"
+    },
+    "splash": {
+      "backgroundColor": "#173d30"
+    },
+    "assetBundlePatterns": ["**/*"]
+  }
+}

@@ -1,0 +1,1031 @@
+// ==========================================
+// PremiumChef Multi-Tenant Prisma Schema
+// Architecture: Database-First / Multi-Tenant (Tenant -> Unit -> Operation)
+// Database: PostgreSQL
+// ==========================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum TenantStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum UnitStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum ProductType {
+  FOOD
+  DRINK
+  PRODUCT
+  SERVICE
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  BLOCKED
+}
+
+enum OrderType {
+  DINE_IN
+  TAKEAWAY
+  COUNTER
+  DELIVERY
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderItemStatus {
+  WAITING
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  TRANSFER
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum CashRegisterStatus {
+  OPEN
+  CLOSED
+}
+
+enum CashSessionStatus {
+  OPEN
+  CLOSED
+}
+
+enum CashMovementType {
+  SALE
+  WITHDRAWAL
+  DEPOSIT
+  REFUND
+  ADJUSTMENT
+}
+
+enum DeliveryStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum InventoryMovementType {
+  PURCHASE
+  SALE
+  CANCELLATION
+  ADJUSTMENT
+  LOSS
+  TRANSFER_IN
+  TRANSFER_OUT
+  RETURN
+}
+
+enum KitchenTicketStatus {
+  WAITING
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+enum CancellationType {
+  ORDER
+  ITEM
+  PAYMENT
+}
+
+// ==========================================
+// ÁREA 1: TENANTS / EMPRESAS
+// ==========================================
+
+model Tenant {
+  id         String       @id @default(uuid())
+  name       String
+  legalName  String?      @map("legal_name")
+  document   String?      @unique
+  email      String?
+  phone      String?
+  status     TenantStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+
+  units            Unit[]
+  users            User[]
+  roles            Role[]
+  categories       Category[]
+  products         Product[]
+  addons           Addon[]
+  customers        Customer[]
+  orders           Order[]
+  deliveryDrivers  DeliveryDriver[]
+  suppliers        Supplier[]
+  purchases        Purchase[]
+  cancellations    Cancellation[]
+  auditLogs        AuditLog[]
+  notifications    Notification[]
+  refreshTokens    RefreshToken[]
+
+  @@map("tenants")
+}
+
+// ==========================================
+// ÁREA 2: UNIDADES
+// ==========================================
+
+model Unit {
+  id           String     @id @default(uuid())
+  tenantId     String     @map("tenant_id")
+  name         String
+  code         String?
+  document     String?
+  phone        String?
+  email        String?
+  zipCode      String?    @map("zip_code")
+  street       String?
+  number       String?
+  complement   String?
+  neighborhood String?
+  city         String?
+  state        String?
+  status       UnitStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  tenant             Tenant              @relation(fields: [tenantId], references: [id])
+  userUnits          UserUnit[]
+  productUnits       ProductUnit[]
+  tables             RestaurantTable[]
+  orders             Order[]
+  cashRegisters      CashRegister[]
+  deliveries         Delivery[]
+  deliveryZones      DeliveryZone[]
+  purchases          Purchase[]
+  inventories        Inventory[]
+  inventoryMovements InventoryMovement[]
+  kitchenTickets     KitchenTicket[]
+  cancellations      Cancellation[]
+  auditLogs          AuditLog[]
+
+  @@index([tenantId])
+  @@map("units")
+}
+
+// ==========================================
+// ÁREA 3: USUÁRIOS E PERMISSÕES (RBAC)
+// ==========================================
+
+model User {
+  id           String     @id @default(uuid())
+  tenantId     String     @map("tenant_id")
+  name         String
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  phone        String?
+  status       UserStatus @default(ACTIVE)
+  lastLoginAt  DateTime?  @map("last_login_at")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  tenant             Tenant              @relation(fields: [tenantId], references: [id])
+  userUnits          UserUnit[]
+  userRoles          UserRole[]
+  orders             Order[]
+  cashSessions       CashSession[]
+  cashMovements      CashMovement[]
+  purchases          Purchase[]
+  inventoryMovements InventoryMovement[]
+  cancellations      Cancellation[]
+  auditLogs          AuditLog[]
+  notifications      Notification[]
+  refreshTokens      RefreshToken[]
+
+  @@index([tenantId])
+  @@map("users")
+}
+
+model UserUnit {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  unitId String @map("unit_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unit Unit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, unitId])
+  @@map("user_units")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id])
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@index([tenantId])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @map("role_id")
+  permissionId String @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId String @map("user_id")
+  roleId String @map("role_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+// ==========================================
+// ÁREA 4: CLIENTES E ENDEREÇOS
+// ==========================================
+
+model Customer {
+  id        String    @id @default(uuid())
+  tenantId  String    @map("tenant_id")
+  name      String
+  document  String?   @map("document")
+  email     String?
+  phone     String?
+  birthDate DateTime? @map("birth_date")
+  notes     String?
+  status    String    @default("ACTIVE")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  tenant    Tenant            @relation(fields: [tenantId], references: [id])
+  addresses CustomerAddress[]
+  orders    Order[]
+
+  @@index([tenantId])
+  @@map("customers")
+}
+
+model CustomerAddress {
+  id           String   @id @default(uuid())
+  customerId   String   @map("customer_id")
+  label        String?
+  zipCode      String   @map("zip_code")
+  street       String
+  number       String
+  complement   String?
+  neighborhood String
+  city         String
+  state        String
+  reference    String?
+  latitude     Float?
+  longitude    Float?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  deliveries Delivery[]
+
+  @@index([customerId])
+  @@map("customer_addresses")
+}
+
+// ==========================================
+// ÁREA 5: PRODUTOS, CATEGORIAS E UNIDADES DE PRODUTO
+// ==========================================
+
+model Category {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  imageUrl    String?  @map("image_url")
+  status      String   @default("ACTIVE")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  products Product[]
+
+  @@index([tenantId])
+  @@map("categories")
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  tenantId    String        @map("tenant_id")
+  categoryId  String?       @map("category_id")
+  name        String
+  description String?
+  sku         String?
+  barcode     String?
+  imageUrl    String?       @map("image_url")
+  type        ProductType   @default(FOOD)
+  status      ProductStatus @default(ACTIVE)
+  trackStock  Boolean       @default(true) @map("track_stock")
+  isDelivery  Boolean       @default(true) @map("is_delivery")
+  isPos       Boolean       @default(true) @map("is_pos")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  tenant             Tenant              @relation(fields: [tenantId], references: [id])
+  category           Category?           @relation(fields: [categoryId], references: [id])
+  productUnits       ProductUnit[]
+  variants           ProductVariant[]
+  productAddons      ProductAddon[]
+  orderItems         OrderItem[]
+  inventories        Inventory[]
+  inventoryMovements InventoryMovement[]
+  recipes            Recipe[]
+  recipeItems        RecipeItem[]        @relation("IngredientProduct")
+  purchaseItems      PurchaseItem[]
+
+  @@index([tenantId])
+  @@index([categoryId])
+  @@map("products")
+}
+
+model ProductUnit {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  unitId    String   @map("unit_id")
+  price     Decimal  @db.Decimal(10, 2)
+  costPrice Decimal? @map("cost_price") @db.Decimal(10, 2)
+  stockMin  Decimal? @map("stock_min") @db.Decimal(10, 3)
+  stockMax  Decimal? @map("stock_max") @db.Decimal(10, 3)
+  active    Boolean  @default(true)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  unit    Unit    @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, unitId])
+  @@map("product_units")
+}
+
+model ProductVariant {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  name      String
+  sku       String?
+  price     Decimal  @db.Decimal(10, 2)
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+// ==========================================
+// ÁREA 6: ADICIONAIS E OPÇÕES
+// ==========================================
+
+model Addon {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  price     Decimal  @db.Decimal(10, 2)
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  productAddons    ProductAddon[]
+  orderItemOptions OrderItemOption[]
+
+  @@index([tenantId])
+  @@map("addons")
+}
+
+model ProductAddon {
+  productId   String  @map("product_id")
+  addonId     String  @map("addon_id")
+  required    Boolean @default(false)
+  maxQuantity Int     @default(1) @map("max_quantity")
+  status      String  @default("ACTIVE")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  addon   Addon   @relation(fields: [addonId], references: [id], onDelete: Cascade)
+
+  @@id([productId, addonId])
+  @@map("product_addons")
+}
+
+// ==========================================
+// ÁREA 7: MESAS E COMANDAS
+// ==========================================
+
+model RestaurantTable {
+  id       String      @id @default(uuid())
+  unitId   String      @map("unit_id")
+  number   Int
+  name     String?
+  capacity Int?
+  status   TableStatus @default(AVAILABLE)
+
+  unit        Unit         @relation(fields: [unitId], references: [id])
+  orderTables OrderTable[]
+
+  @@unique([unitId, number])
+  @@map("restaurant_tables")
+}
+
+model OrderTable {
+  id      String @id @default(uuid())
+  orderId String @map("order_id")
+  tableId String @map("table_id")
+
+  order Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  table RestaurantTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, tableId])
+  @@map("order_tables")
+}
+
+// ==========================================
+// ÁREA 8: PEDIDOS E ITENS
+// ==========================================
+
+model Order {
+  id          String      @id @default(uuid())
+  tenantId    String      @map("tenant_id")
+  unitId      String      @map("unit_id")
+  customerId  String?     @map("customer_id")
+  userId      String?     @map("user_id")
+  orderNumber Int         @map("order_number")
+  orderType   OrderType   @default(COUNTER) @map("order_type")
+  status      OrderStatus @default(PENDING)
+  subtotal    Decimal     @db.Decimal(10, 2)
+  discount    Decimal     @default(0.00) @db.Decimal(10, 2)
+  deliveryFee Decimal     @default(0.00) @map("delivery_fee") @db.Decimal(10, 2)
+  serviceFee  Decimal     @default(0.00) @map("service_fee") @db.Decimal(10, 2)
+  total       Decimal     @db.Decimal(10, 2)
+  notes       String?
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  completedAt DateTime?   @map("completed_at")
+  cancelledAt DateTime?   @map("cancelled_at")
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  unit           Unit            @relation(fields: [unitId], references: [id])
+  customer       Customer?       @relation(fields: [customerId], references: [id])
+  user           User?           @relation(fields: [userId], references: [id])
+  orderItems     OrderItem[]     @relation("OrderItems")
+  orderTables    OrderTable[]
+  payments       Payment[]
+  splits         OrderSplit[]
+  delivery       Delivery?
+  kitchenTickets KitchenTicket[]
+  cancellations  Cancellation[]
+
+  @@index([tenantId, unitId])
+  @@index([status])
+  @@unique([unitId, orderNumber])
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String          @id @default(uuid())
+  orderId     String          @map("order_id")
+  productId   String?         @map("product_id")
+  variantId   String?         @map("variant_id")
+  productName String          @map("product_name")
+  quantity    Decimal         @db.Decimal(10, 3)
+  unitPrice   Decimal         @map("unit_price") @db.Decimal(10, 2)
+  discount    Decimal         @default(0.00) @db.Decimal(10, 2)
+  total       Decimal         @db.Decimal(10, 2)
+  notes       String?
+  status      OrderItemStatus @default(WAITING)
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  order              Order               @relation("OrderItems", fields: [orderId], references: [id], onDelete: Cascade)
+  product            Product?            @relation(fields: [productId], references: [id])
+  variant            ProductVariant?     @relation(fields: [variantId], references: [id])
+  options            OrderItemOption[]
+  splitItems         OrderSplitItem[]
+  kitchenTicketItems KitchenTicketItem[]
+  cancellations      Cancellation[]
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model OrderItemOption {
+  id          String  @id @default(uuid())
+  orderItemId String  @map("order_item_id")
+  addonId     String? @map("addon_id")
+  addonName   String  @map("addon_name")
+  quantity    Int     @default(1)
+  unitPrice   Decimal @map("unit_price") @db.Decimal(10, 2)
+  total       Decimal @db.Decimal(10, 2)
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  addon     Addon?    @relation(fields: [addonId], references: [id])
+
+  @@index([orderItemId])
+  @@map("order_item_options")
+}
+
+// ==========================================
+// ÁREA 9: PAGAMENTOS
+// ==========================================
+
+model Payment {
+  id            String        @id @default(uuid())
+  orderId       String        @map("order_id")
+  splitId       String?       @map("split_id")
+  paymentMethod PaymentMethod @map("payment_method")
+  amount        Decimal       @db.Decimal(10, 2)
+  status        PaymentStatus @default(PAID)
+  transactionId String?       @map("transaction_id")
+  paidAt        DateTime      @default(now()) @map("paid_at")
+
+  order Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  split OrderSplit? @relation(fields: [splitId], references: [id])
+
+  @@index([orderId])
+  @@index([splitId])
+  @@map("payments")
+}
+
+model OrderSplit {
+  id        String   @id @default(uuid())
+  orderId   String   @map("order_id")
+  name      String
+  amount    Decimal  @db.Decimal(10, 2)
+  status    String   @default("OPEN")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  order       Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  payments    Payment[]
+  splitItems  OrderSplitItem[]
+
+  @@index([orderId, status])
+  @@map("order_splits")
+}
+
+model OrderSplitItem {
+  id        String  @id @default(uuid())
+  splitId   String  @map("split_id")
+  orderItemId String @map("order_item_id")
+  quantity  Decimal @db.Decimal(10, 3)
+  amount    Decimal @db.Decimal(10, 2)
+
+  split     OrderSplit @relation(fields: [splitId], references: [id], onDelete: Cascade)
+  orderItem OrderItem  @relation(fields: [orderItemId], references: [id])
+
+  @@unique([splitId, orderItemId])
+  @@index([orderItemId])
+  @@map("order_split_items")
+}
+
+// ==========================================
+// ÁREA 10: CAIXA E SESSÕES
+// ==========================================
+
+model CashRegister {
+  id     String             @id @default(uuid())
+  unitId String             @map("unit_id")
+  name   String
+  status CashRegisterStatus @default(CLOSED)
+
+  unit         Unit          @relation(fields: [unitId], references: [id])
+  cashSessions CashSession[]
+
+  @@index([unitId])
+  @@map("cash_registers")
+}
+
+model CashSession {
+  id             String            @id @default(uuid())
+  cashRegisterId String            @map("cash_register_id")
+  userId         String            @map("user_id")
+  openedAt       DateTime          @default(now()) @map("opened_at")
+  closedAt       DateTime?         @map("closed_at")
+  openingAmount  Decimal           @map("opening_amount") @db.Decimal(10, 2)
+  expectedAmount Decimal?          @map("expected_amount") @db.Decimal(10, 2)
+  countedAmount  Decimal?          @map("counted_amount") @db.Decimal(10, 2)
+  difference     Decimal?          @db.Decimal(10, 2)
+  status         CashSessionStatus @default(OPEN)
+
+  cashRegister  CashRegister   @relation(fields: [cashRegisterId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
+  cashMovements CashMovement[]
+
+  @@index([cashRegisterId])
+  @@index([userId])
+  @@map("cash_sessions")
+}
+
+model CashMovement {
+  id            String           @id @default(uuid())
+  cashSessionId String           @map("cash_session_id")
+  userId        String           @map("user_id")
+  type          CashMovementType
+  amount        Decimal          @db.Decimal(10, 2)
+  description   String?
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  cashSession CashSession @relation(fields: [cashSessionId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id])
+
+  @@index([cashSessionId])
+  @@map("cash_movements")
+}
+
+// ==========================================
+// ÁREA 11: DELIVERY E ENTREGADORES
+// ==========================================
+
+model Delivery {
+  id          String         @id @default(uuid())
+  orderId     String         @unique @map("order_id")
+  unitId      String         @map("unit_id")
+  driverId    String?        @map("driver_id")
+  addressId   String?        @map("address_id")
+  status      DeliveryStatus @default(PENDING)
+  deliveryFee Decimal        @default(0.00) @map("delivery_fee") @db.Decimal(10, 2)
+  acceptedAt  DateTime?      @map("accepted_at")
+  pickedUpAt  DateTime?      @map("picked_up_at")
+  deliveredAt DateTime?      @map("delivered_at")
+  latitude    Float?
+  longitude   Float?
+
+  order   Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  unit    Unit             @relation(fields: [unitId], references: [id])
+  driver  DeliveryDriver?  @relation(fields: [driverId], references: [id])
+  address CustomerAddress? @relation(fields: [addressId], references: [id])
+
+  @@index([unitId])
+  @@index([driverId])
+  @@map("deliveries")
+}
+
+model DeliveryDriver {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  phone     String
+  document  String?
+  vehicle   String?
+  plate     String?
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  deliveries Delivery[]
+
+  @@index([tenantId])
+  @@map("delivery_drivers")
+}
+
+model DeliveryZone {
+  id               String   @id @default(uuid())
+  unitId           String   @map("unit_id")
+  name             String
+  deliveryFee      Decimal  @map("delivery_fee") @db.Decimal(10, 2)
+  estimatedMinutes Int?     @map("estimated_minutes")
+  status           String   @default("ACTIVE")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  unit Unit @relation(fields: [unitId], references: [id])
+
+  @@index([unitId])
+  @@map("delivery_zones")
+}
+
+// ==========================================
+// ÁREA 12: ESTOQUE, MOVIMENTAÇÕES E RECEITAS
+// ==========================================
+
+model Inventory {
+  id               String   @id @default(uuid())
+  unitId           String   @map("unit_id")
+  productId        String   @map("product_id")
+  quantity         Decimal  @default(0.000) @db.Decimal(10, 3)
+  reservedQuantity Decimal  @default(0.000) @map("reserved_quantity") @db.Decimal(10, 3)
+  minimumQuantity  Decimal  @default(0.000) @map("minimum_quantity") @db.Decimal(10, 3)
+  maximumQuantity  Decimal? @map("maximum_quantity") @db.Decimal(10, 3)
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  unit    Unit    @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([unitId, productId])
+  @@map("inventory")
+}
+
+model InventoryMovement {
+  id               String                @id @default(uuid())
+  unitId           String                @map("unit_id")
+  productId        String                @map("product_id")
+  userId           String?               @map("user_id")
+  type             InventoryMovementType
+  quantity         Decimal               @db.Decimal(10, 3)
+  previousQuantity Decimal               @map("previous_quantity") @db.Decimal(10, 3)
+  newQuantity      Decimal               @map("new_quantity") @db.Decimal(10, 3)
+  referenceType    String?               @map("reference_type")
+  referenceId      String?               @map("reference_id")
+  reason           String?
+  createdAt        DateTime              @default(now()) @map("created_at")
+
+  unit    Unit    @relation(fields: [unitId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
+
+  @@index([unitId])
+  @@index([productId])
+  @@map("inventory_movements")
+}
+
+model Recipe {
+  id            String   @id @default(uuid())
+  productId     String   @map("product_id")
+  name          String
+  yieldQuantity Decimal  @default(1.000) @map("yield_quantity") @db.Decimal(10, 3)
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  recipeItems RecipeItem[]
+
+  @@index([productId])
+  @@map("recipes")
+}
+
+model RecipeItem {
+  id                  String  @id @default(uuid())
+  recipeId            String  @map("recipe_id")
+  ingredientProductId String  @map("ingredient_product_id")
+  quantity            Decimal @db.Decimal(10, 3)
+  unit                String
+
+  recipe            Recipe  @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredientProduct Product @relation("IngredientProduct", fields: [ingredientProductId], references: [id])
+
+  @@index([recipeId])
+  @@map("recipe_items")
+}
+
+// ==========================================
+// ÁREA 13: FORNECEDORES E COMPRAS
+// ==========================================
+
+model Supplier {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  legalName String?  @map("legal_name")
+  document  String?
+  email     String?
+  phone     String?
+  address   String?
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  purchases Purchase[]
+
+  @@index([tenantId])
+  @@map("suppliers")
+}
+
+model Purchase {
+  id            String    @id @default(uuid())
+  tenantId      String    @map("tenant_id")
+  unitId        String    @map("unit_id")
+  supplierId    String?   @map("supplier_id")
+  userId        String?   @map("user_id")
+  invoiceNumber String?   @map("invoice_number")
+  invoiceKey    String?   @map("invoice_key")
+  subtotal      Decimal   @db.Decimal(10, 2)
+  discount      Decimal   @default(0.00) @db.Decimal(10, 2)
+  total         Decimal   @db.Decimal(10, 2)
+  status        String    @default("COMPLETED")
+  purchasedAt   DateTime  @default(now()) @map("purchased_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  unit          Unit           @relation(fields: [unitId], references: [id])
+  supplier      Supplier?      @relation(fields: [supplierId], references: [id])
+  user          User?          @relation(fields: [userId], references: [id])
+  purchaseItems PurchaseItem[]
+
+  @@index([tenantId, unitId])
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id         String  @id @default(uuid())
+  purchaseId String  @map("purchase_id")
+  productId  String  @map("product_id")
+  quantity   Decimal @db.Decimal(10, 3)
+  unitCost   Decimal @map("unit_cost") @db.Decimal(10, 2)
+  total      Decimal @db.Decimal(10, 2)
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@index([purchaseId])
+  @@map("purchase_items")
+}
+
+// ==========================================
+// ÁREA 14: KDS, CANCELAMENTOS, AUDITORIA E NOTIFICAÇÕES
+// ==========================================
+
+model KitchenTicket {
+  id        String              @id @default(uuid())
+  orderId   String              @map("order_id")
+  unitId    String              @map("unit_id")
+  status    KitchenTicketStatus @default(WAITING)
+  priority  Int                 @default(0)
+  startedAt DateTime?           @map("started_at")
+  readyAt   DateTime?           @map("ready_at")
+  createdAt DateTime            @default(now()) @map("created_at")
+
+  order              Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  unit               Unit                @relation(fields: [unitId], references: [id])
+  kitchenTicketItems KitchenTicketItem[]
+
+  @@index([unitId, status])
+  @@map("kitchen_tickets")
+}
+
+model KitchenTicketItem {
+  id              String          @id @default(uuid())
+  kitchenTicketId String          @map("kitchen_ticket_id")
+  orderItemId     String          @map("order_item_id")
+  quantity        Decimal         @db.Decimal(10, 3)
+  status          OrderItemStatus @default(WAITING)
+
+  kitchenTicket KitchenTicket @relation(fields: [kitchenTicketId], references: [id], onDelete: Cascade)
+  orderItem     OrderItem     @relation(fields: [orderItemId], references: [id])
+
+  @@index([kitchenTicketId])
+  @@map("kitchen_ticket_items")
+}
+
+model Cancellation {
+  id          String           @id @default(uuid())
+  tenantId    String           @map("tenant_id")
+  unitId      String           @map("unit_id")
+  orderId     String?          @map("order_id")
+  orderItemId String?          @map("order_item_id")
+  userId      String           @map("user_id")
+  reason      String
+  type        CancellationType
+  amount      Decimal          @db.Decimal(10, 2)
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  unit      Unit       @relation(fields: [unitId], references: [id])
+  order     Order?     @relation(fields: [orderId], references: [id])
+  orderItem OrderItem? @relation(fields: [orderItemId], references: [id])
+  user      User       @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, unitId])
+  @@map("cancellations")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String?  @map("tenant_id")
+  unitId    String?  @map("unit_id")
+  userId    String?  @map("user_id")
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  oldData   Json?    @map("old_data")
+  newData   Json?    @map("new_data")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+  unit   Unit?   @relation(fields: [unitId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, unitId])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  tenantId  String    @map("tenant_id")
+  userId    String?   @map("user_id")
+  type      String
+  title     String
+  message   String
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, userId])
+  @@map("notifications")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tenantId  String    @map("tenant_id")
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}

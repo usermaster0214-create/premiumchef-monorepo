@@ -1,0 +1,21 @@
+{
+  "name": "premiumchef-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "deploy:api": "corepack pnpm --filter @premiumchef/database db:migrate:deploy && corepack pnpm --filter @premiumchef/api build",
+    "deploy:web": "corepack pnpm --filter @premiumchef/web build",
+    "mobile:preview": "corepack pnpm --filter @premiumchef/mobile exec eas build --profile preview",
+    "mobile:production": "corepack pnpm --filter @premiumchef/mobile exec eas build --profile production"
+  },
+  "devDependencies": {
+    "turbo": "^1.12.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.3.3"
+  },
+  "packageManager": "pnpm@8.15.0"
+}
