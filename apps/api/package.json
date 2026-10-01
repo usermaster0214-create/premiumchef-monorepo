@@ -6,6 +6,7 @@
     "build": "nest build",
     "dev": "nest start --watch",
     "start": "node dist/main",
+    "seed": "node dist/seed.js",
     "test": "jest --runInBand",
     "test:e2e": "jest --config ./jest.config.cjs --runInBand",
     "type-check": "tsc --noEmit"
