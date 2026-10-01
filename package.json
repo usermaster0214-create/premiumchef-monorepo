@@ -2,7 +2,7 @@
   "name": "premiumchef-monorepo",
   "private": true,
   "scripts": {
-    "build": "corepack pnpm --filter @premiumchef/database db:generate && turbo run build",
+    "build": "corepack pnpm --filter @premiumchef/database db:generate && corepack pnpm --filter @premiumchef/database build && corepack pnpm --filter @premiumchef/api build && corepack pnpm --filter @premiumchef/web build",
     "start": "node scripts/railway-start.cjs",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
