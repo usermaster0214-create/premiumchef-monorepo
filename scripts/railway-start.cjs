@@ -18,6 +18,14 @@ if (service === 'API') {
     shell: process.platform === 'win32',
   });
   if (migration.status !== 0) process.exit(migration.status ?? 1);
+
+  if (process.env.SEED_ADMIN_PASSWORD) {
+    const seed = spawnSync('corepack', ['pnpm', '--filter', '@premiumchef/api', 'seed'], {
+      stdio: 'inherit',
+      shell: process.platform === 'win32',
+    });
+    if (seed.status !== 0) process.exit(seed.status ?? 1);
+  }
 }
 
 const child = spawn('corepack', ['pnpm', ...command], {
