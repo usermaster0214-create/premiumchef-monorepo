@@ -48,7 +48,11 @@ async function main() {
   await prisma.userRole.upsert({ where: { userId_roleId: { userId: user.id, roleId: role.id } }, update: {}, create: { userId: user.id, roleId: role.id } });
   await prisma.cashRegister.upsert({ where: { id: '00000000-0000-4000-8000-000000000003' }, update: { name: 'Caixa Principal', unitId: unit.id }, create: { id: '00000000-0000-4000-8000-000000000003', unitId: unit.id, name: 'Caixa Principal' } });
   await prisma.restaurantTable.upsert({ where: { id: '00000000-0000-4000-8000-000000000004' }, update: { number: 1, unitId: unit.id }, create: { id: '00000000-0000-4000-8000-000000000004', unitId: unit.id, number: 1, capacity: 4 } });
-  await prisma.deliveryZone.createMany({ data: [{ unitId: unit.id, name: 'Centro', deliveryFee: 7.5, estimatedMinutes: 35 }], skipDuplicates: true });
+  await prisma.deliveryZone.upsert({
+    where: { unitId_name: { unitId: unit.id, name: 'Centro' } },
+    update: { deliveryFee: 7.5, estimatedMinutes: 35, status: 'ACTIVE' },
+    create: { unitId: unit.id, name: 'Centro', deliveryFee: 7.5, estimatedMinutes: 35 },
+  });
   console.log(`Seed complete: tenant=${tenant.id} unit=${unit.id} admin=${user.email}`);
 }
 

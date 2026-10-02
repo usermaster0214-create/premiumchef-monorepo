@@ -774,6 +774,7 @@ model DeliveryZone {
   unit Unit @relation(fields: [unitId], references: [id])
 
   @@index([unitId])
+  @@unique([unitId, name])
   @@map("delivery_zones")
 }
 
