@@ -21,7 +21,7 @@ export class DeliveryService {
     if (!unit) throw new NotFoundException('Unidade não encontrada');
     return runWithTenantContext(
       { tenantId: unit.tenantId, unitId: unit.id },
-      callback,
+      async () => await callback(),
     );
   }
 

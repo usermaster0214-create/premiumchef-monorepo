@@ -30,4 +30,19 @@ describe('tenant context', () => {
     });
     expect(getTenantContext()).toBeUndefined();
   });
+
+  it('keeps context active while awaiting a lazy thenable operation', async () => {
+    const lazyOperation = {
+      then(resolve: (value: unknown) => unknown) {
+        return Promise.resolve(getTenantContext()).then(resolve);
+      },
+    };
+
+    await expect(
+      runWithTenantContext(
+        { tenantId: 'tenant-lazy', unitId: 'unit-lazy' },
+        async () => await lazyOperation,
+      ),
+    ).resolves.toEqual({ tenantId: 'tenant-lazy', unitId: 'unit-lazy' });
+  });
 });
