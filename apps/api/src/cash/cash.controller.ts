@@ -24,6 +24,12 @@ import {
 export class CashController {
   constructor(private readonly cashService: CashService) {}
 
+  @Get('registers')
+  @RequirePermissions('cash.read')
+  registers(@CurrentTenant() tenant: CurrentTenantContext): Promise<unknown> {
+    return this.cashService.listRegisters(tenant.unitId);
+  }
+
   @Post('open')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermissions('cash.open')

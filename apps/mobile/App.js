@@ -4,6 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import OperationalApp from './OperationalApp';
 
 const apiBase = (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001/api/v1').replace(/\/+$/, '');
 const Stack = createNativeStackNavigator();
@@ -56,8 +57,14 @@ function AppContent() {
   return <NavigationContainer><Stack.Navigator screenOptions={{ headerShown: false }}><Stack.Screen name="Operacional"><OperationalTabs session={session} /></Stack.Screen></Stack.Navigator></NavigationContainer>;
 }
 
-export default function App() { return <SafeAreaProvider><AppContent /></SafeAreaProvider>; }
+  export default function App() {
+    return (
+      <SafeAreaProvider>
+        <OperationalApp />
+      </SafeAreaProvider>
+    );
+  }
 
 const styles = StyleSheet.create({
   loginScreen: { flex: 1, backgroundColor: palette.ink, justifyContent: 'center', padding: 26 }, loginMark: { alignItems: 'center', backgroundColor: '#f1a361', borderRadius: 12, height: 48, justifyContent: 'center', marginBottom: 22, width: 48 }, loginMarkText: { color: palette.ink, fontSize: 24, fontWeight: '800' }, kicker: { color: palette.green, fontSize: 11, fontWeight: '800', letterSpacing: 1, marginBottom: 8 }, loginTitle: { color: palette.white, fontSize: 31, fontWeight: '800', lineHeight: 37 }, loginSubtitle: { color: '#bed0c4', fontSize: 15, lineHeight: 22, marginTop: 12 }, form: { gap: 12, marginTop: 28 }, input: { backgroundColor: '#fff', borderRadius: 8, color: palette.ink, height: 50, paddingHorizontal: 15 }, error: { color: '#ffc2b8', fontSize: 12 }, primaryButton: { alignItems: 'center', backgroundColor: palette.green, borderRadius: 8, justifyContent: 'center', minHeight: 48, paddingHorizontal: 16 }, primaryButtonText: { color: '#fff', fontSize: 14, fontWeight: '800' }, screen: { backgroundColor: palette.paper, flexGrow: 1, padding: 22 }, title: { color: palette.ink, fontSize: 28, fontWeight: '800' }, subtitle: { color: palette.muted, fontSize: 14, lineHeight: 21, marginBottom: 20, marginTop: 7 }, hero: { backgroundColor: palette.ink, borderRadius: 14, padding: 20 }, heroTitle: { color: '#fff', fontSize: 20, fontWeight: '800' }, heroText: { color: '#bed0c4', fontSize: 13, lineHeight: 20, marginTop: 8 }, statRow: { flexDirection: 'row', gap: 10, marginTop: 14 }, stat: { backgroundColor: '#fff', borderRadius: 10, flex: 1, padding: 14 }, statValue: { color: palette.green, fontSize: 21, fontWeight: '800' }, statLabel: { color: palette.muted, fontSize: 11, marginTop: 3 }, operationList: { gap: 10 }, operationCard: { alignItems: 'center', backgroundColor: '#fff', borderRadius: 12, flexDirection: 'row', padding: 15 }, operationIcon: { alignItems: 'center', borderRadius: 10, height: 42, justifyContent: 'center', width: 42 }, operationIconText: { color: palette.ink, fontSize: 17, fontWeight: '800' }, operationCopy: { flex: 1, marginLeft: 12 }, operationTitle: { color: palette.ink, fontSize: 14, fontWeight: '800' }, operationText: { color: palette.muted, fontSize: 11, lineHeight: 17, marginTop: 4 }, chevron: { color: palette.muted, fontSize: 25, marginLeft: 8 }, tabBar: { borderTopColor: '#dce5df', height: 62, paddingBottom: 7, paddingTop: 5 }, tabLabel: { fontSize: 10, fontWeight: '700' }, tabIcon: { fontSize: 18 },
-+});
+});

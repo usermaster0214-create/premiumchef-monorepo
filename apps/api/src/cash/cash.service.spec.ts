@@ -19,7 +19,7 @@ describe('CashService', () => {
   let service: CashService;
   let prisma: {
     tenantScoped: {
-      cashRegister: { findFirst: jest.Mock; update: jest.Mock };
+      cashRegister: { findFirst: jest.Mock; findMany: jest.Mock; update: jest.Mock };
       cashSession: { findFirst: jest.Mock; create: jest.Mock; update: jest.Mock };
       cashMovement: { create: jest.Mock };
       $transaction: jest.Mock;
@@ -31,6 +31,7 @@ describe('CashService', () => {
       tenantScoped: {
         cashRegister: {
           findFirst: jest.fn(),
+          findMany: jest.fn(),
           update: jest.fn().mockResolvedValue({}),
         },
         cashSession: {
@@ -58,6 +59,18 @@ describe('CashService', () => {
       cashMovement: prisma.tenantScoped.cashMovement,
     };
   }
+
+  it('lists cash registers scoped to the active unit', async () => {
+    const registers = [{ id: 'register-1', name: 'Principal', status: 'CLOSED' }];
+    prisma.tenantScoped.cashRegister.findMany.mockResolvedValue(registers);
+
+    await expect(service.listRegisters(actor.unitId)).resolves.toEqual(registers);
+    expect(prisma.tenantScoped.cashRegister.findMany).toHaveBeenCalledWith({
+      where: { unitId: actor.unitId },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, status: true },
+    });
+  });
 
   it('opens a register and marks it open in one tenant-scoped transaction', async () => {
     const transaction = transactionClient();

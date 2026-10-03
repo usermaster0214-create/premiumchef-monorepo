@@ -23,6 +23,14 @@ type CashActor = CurrentTenantContext & { userId: string };
 export class CashService {
   constructor(private readonly prisma: PrismaService) {}
 
+  listRegisters(unitId: string): Promise<unknown> {
+    return this.prisma.tenantScoped.cashRegister.findMany({
+      where: { unitId },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, status: true },
+    });
+  }
+
   async open(dto: OpenCashSessionDto, actor: CashActor) {
     return this.prisma.tenantScoped.$transaction(async (transaction) => {
       const register = await transaction.cashRegister.findFirst({

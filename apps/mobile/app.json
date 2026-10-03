@@ -4,7 +4,6 @@
     "slug": "premiumchef-operacional",
     "version": "1.0.0",
     "orientation": "default",
-    "entryPoint": "./App.js",
     "platforms": ["ios", "android", "web"],
     "ios": { "bundleIdentifier": "br.com.premiumchef.operacional" },
     "android": { "package": "br.com.premiumchef.operacional" },
