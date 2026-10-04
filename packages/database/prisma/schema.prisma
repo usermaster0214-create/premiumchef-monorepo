@@ -503,11 +503,13 @@ model RestaurantTable {
   name     String?
   capacity Int?
   status   TableStatus @default(AVAILABLE)
+  isActive Boolean     @default(true) @map("is_active")
 
   unit        Unit         @relation(fields: [unitId], references: [id])
   orderTables OrderTable[]
 
   @@unique([unitId, number])
+  @@index([unitId, isActive])
   @@map("restaurant_tables")
 }
 

@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { CurrentTenant, CurrentTenantContext } from '../auth/current-tenant.decorator';
 import { RequirePermissions } from '../auth/permissions.guard';
@@ -22,8 +23,11 @@ export class TablesController {
 
   @Get()
   @RequirePermissions('tables.read')
-  list(@CurrentTenant() tenant: CurrentTenantContext): Promise<unknown> {
-    return this.tablesService.list(tenant);
+  list(
+    @CurrentTenant() tenant: CurrentTenantContext,
+    @Query('archived') archived?: string,
+  ): Promise<unknown> {
+    return this.tablesService.list(tenant, archived === 'true');
   }
 
   @Post()
@@ -51,5 +55,17 @@ export class TablesController {
     @Body() dto: UpdateTableStatusDto,
   ): Promise<unknown> {
     return this.tablesService.setStatus(id, dto.status);
+  }
+
+  @Patch(':id/archive')
+  @RequirePermissions('tables.update')
+  archive(@Param('id', ParseUUIDPipe) id: string): Promise<unknown> {
+    return this.tablesService.archive(id);
+  }
+
+  @Patch(':id/restore')
+  @RequirePermissions('tables.update')
+  restore(@Param('id', ParseUUIDPipe) id: string): Promise<unknown> {
+    return this.tablesService.restore(id);
   }
 }

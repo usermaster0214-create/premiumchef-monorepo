@@ -26,14 +26,56 @@ describe('TablesService', () => {
     service = new TablesService(prisma);
   });
 
-  it('lists tables scoped to the selected unit', async () => {
+  it('lists active tables scoped to the selected unit by default', async () => {
     prisma.tenantScoped.restaurantTable.findMany.mockResolvedValue([]);
 
     await service.list(tenant);
 
     expect(prisma.tenantScoped.restaurantTable.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { unitId: 'unit-1' } }),
+      expect.objectContaining({ where: { unitId: 'unit-1', isActive: true } }),
     );
+  });
+
+  it('lists archived tables separately', async () => {
+    prisma.tenantScoped.restaurantTable.findMany.mockResolvedValue([]);
+
+    await service.list(tenant, true);
+
+    expect(prisma.tenantScoped.restaurantTable.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { unitId: 'unit-1', isActive: false } }),
+    );
+  });
+
+  it('archives a table without an open command', async () => {
+    const transaction = prisma.tenantScoped;
+    prisma.tenantScoped.$transaction.mockImplementation(
+      (callback: (client: any) => Promise<unknown>) => callback(transaction),
+    );
+    prisma.tenantScoped.restaurantTable.findFirst.mockResolvedValue({
+      id: 'table-1',
+      orderTables: [],
+    });
+
+    await service.archive('table-1');
+
+    expect(prisma.tenantScoped.restaurantTable.update).toHaveBeenCalledWith({
+      where: { id: 'table-1' },
+      data: { isActive: false },
+    });
+  });
+
+  it('does not archive a table with an open command', async () => {
+    const transaction = prisma.tenantScoped;
+    prisma.tenantScoped.$transaction.mockImplementation(
+      (callback: (client: any) => Promise<unknown>) => callback(transaction),
+    );
+    prisma.tenantScoped.restaurantTable.findFirst.mockResolvedValue({
+      id: 'table-1',
+      orderTables: [{ orderId: 'order-1' }],
+    });
+
+    await expect(service.archive('table-1')).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.tenantScoped.restaurantTable.update).not.toHaveBeenCalled();
   });
 
   it('does not release a table with an open command', async () => {
