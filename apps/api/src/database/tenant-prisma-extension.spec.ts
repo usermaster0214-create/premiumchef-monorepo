@@ -45,6 +45,31 @@ describe('tenant Prisma extension', () => {
     ).rejects.toThrow('Physical deletion is not allowed');
   });
 
+  it.each([
+    ['customerAddress', 'CustomerAddress'],
+    ['orderTable', 'OrderTable'],
+    ['orderItem', 'OrderItem'],
+    ['orderItemOption', 'OrderItemOption'],
+    ['payment', 'Payment'],
+    ['orderSplit', 'OrderSplit'],
+    ['cashSession', 'CashSession'],
+    ['cashMovement', 'CashMovement'],
+  ])('allows the service-validated %s child create inside tenant context', async (delegate, model) => {
+    const data = { parentId: 'parent-1' };
+    const client = prisma as unknown as Record<string, any>;
+
+    await runWithTenantContext(
+      { tenantId: 'tenant-1', unitId: 'unit-1' },
+      async () => await client[delegate].create({ data }),
+    );
+
+    expect(capturedOperations[0]).toMatchObject({
+      model,
+      operation: 'create',
+      args: { data },
+    });
+  });
+
   it('scopes product updates in the where clause without adding tenantId to update data', async () => {
     await runWithTenantContext(
       { tenantId: 'tenant-1', unitId: 'unit-1' },
