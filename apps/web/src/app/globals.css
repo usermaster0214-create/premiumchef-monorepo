@@ -214,6 +214,7 @@ tbody tr:hover { background: #fbfdfb; }
 .table-archived .table-number { background: #e9eeea; color: #6a756e; }
 .table-delete-button { border: 1px solid #efd6d2; border-radius: 5px; background: #fff7f5; color: #a33d34; cursor: pointer; font-size: 11px; font-weight: 700; min-height: 36px; padding: 0 9px; }
 .table-delete-button:disabled { cursor: wait; opacity: .55; }
+.companies-table { max-width: 1440px; margin: 0 auto; }
 .kds-shell { min-height: 100vh; background: var(--paper); padding: 30px 34px 48px; }
 .kds-board { display: grid; max-width: 1440px; min-height: 640px; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 12px; margin: 0 auto; }
 .kds-column { border: 1px solid var(--line); border-radius: 8px; background: #eaf0eb; padding: 10px; }

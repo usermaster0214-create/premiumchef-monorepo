@@ -80,6 +80,7 @@ export class AuthService {
         units: principal.units,
         roles: principal.roles,
         permissions: principal.permissions,
+        platform_admin: principal.platform_admin === true,
       },
     };
   }
@@ -193,6 +194,7 @@ export class AuthService {
         name: true,
         email: true,
         status: true,
+        isPlatformAdmin: true,
         tenant: { select: { status: true } },
         userUnits: {
           where: { unit: { tenantId, status: 'ACTIVE' } },
@@ -240,6 +242,7 @@ export class AuthService {
       units: user.userUnits.map(({ unitId }) => unitId),
       roles,
       permissions,
+      platform_admin: user.isPlatformAdmin,
       token_type: 'access',
     };
   }

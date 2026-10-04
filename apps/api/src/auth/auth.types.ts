@@ -6,6 +6,7 @@ export interface AuthPrincipal {
   units: string[];
   roles: string[];
   permissions: string[];
+  platform_admin?: boolean;
   token_type: 'access';
   unit_id?: string;
 }

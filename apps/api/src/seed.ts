@@ -1,20 +1,11 @@
 import 'dotenv/config';
 import * as argon2 from 'argon2';
 import { PrismaClient, UserStatus } from '@premiumchef/database';
+import { ALL_PERMISSIONS } from './platform/default-roles';
 
 const prisma = new PrismaClient();
 
-const permissions = [
-  'products.read', 'products.create', 'products.update',
-  'orders.read', 'orders.create', 'orders.update', 'orders.pay',
-  'cash.read', 'cash.open', 'cash.close', 'cash.movement',
-  'tables.read', 'tables.create', 'tables.update',
-  'kitchen.view', 'kitchen.update',
-  'delivery.read', 'delivery.assign', 'delivery.update',
-  'delivery.drivers.read', 'delivery.drivers.create', 'delivery.drivers.update',
-  'inventory.read', 'inventory.adjust', 'purchases.read', 'purchases.create',
-  'reports.view',
-];
+const permissions = ALL_PERMISSIONS;
 
 async function main() {
   const password = process.env.SEED_ADMIN_PASSWORD;
@@ -36,8 +27,8 @@ async function main() {
   });
   const user = await prisma.user.upsert({
     where: { email },
-    update: { name: process.env.SEED_ADMIN_NAME || 'Administrador', passwordHash: await argon2.hash(password), status: UserStatus.ACTIVE, tenantId: tenant.id },
-    create: { tenantId: tenant.id, name: process.env.SEED_ADMIN_NAME || 'Administrador', email, passwordHash: await argon2.hash(password), status: UserStatus.ACTIVE },
+    update: { name: process.env.SEED_ADMIN_NAME || 'Administrador', passwordHash: await argon2.hash(password), status: UserStatus.ACTIVE, tenantId: tenant.id, isPlatformAdmin: true },
+    create: { tenantId: tenant.id, name: process.env.SEED_ADMIN_NAME || 'Administrador', email, passwordHash: await argon2.hash(password), status: UserStatus.ACTIVE, isPlatformAdmin: true },
   });
   await prisma.userUnit.upsert({ where: { userId_unitId: { userId: user.id, unitId: unit.id } }, update: {}, create: { userId: user.id, unitId: unit.id } });
   const role = await prisma.role.findFirst({ where: { tenantId: tenant.id, name: 'ADMIN' } }) || await prisma.role.create({ data: { tenantId: tenant.id, name: 'ADMIN', description: 'Administrador de staging' } });
