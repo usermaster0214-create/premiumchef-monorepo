@@ -244,6 +244,7 @@ export default function CatalogPage() {
       const result = (await response.json()) as AuthSession;
       if (!result.user.units.length) throw new Error('Sua conta não possui unidades autorizadas.');
       window.sessionStorage.setItem('premiumchef.session', JSON.stringify(result));
+      window.dispatchEvent(new Event('premiumchef:session-change'));
       setSession(result);
       setUnitId(result.user.units[0]);
       setPassword('');
@@ -256,6 +257,7 @@ export default function CatalogPage() {
 
   function signOut() {
     window.sessionStorage.removeItem('premiumchef.session');
+    window.dispatchEvent(new Event('premiumchef:session-change'));
     setSession(null);
     setProducts([]);
     setCategories([]);
@@ -484,34 +486,7 @@ export default function CatalogPage() {
   const heading = tab === 'products' ? 'Produtos' : tab === 'categories' ? 'Categorias' : 'Adicionais';
 
   return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <span className="brand-mark">P</span>
-          <div className="brand-copy">
-            <div className="brand-name">PremiumChef</div>
-            <div className="brand-subtitle">Painel de operação</div>
-          </div>
-        </div>
-        <div className="nav-label">Cadastros</div>
-        <nav className="nav-list" aria-label="Catálogo">
-          <a className="nav-button" href="/pos"><span className="nav-glyph">▤</span><span className="nav-text">PDV</span></a>
-          <a className="nav-button" href="/tables"><span className="nav-glyph">◉</span><span className="nav-text">Mesas</span></a>
-          <a className="nav-button" href="/kds"><span className="nav-glyph">▤</span><span className="nav-text">KDS</span></a>
-          <a className="nav-button" href="/delivery-ops"><span className="nav-glyph">➜</span><span className="nav-text">Entregas</span></a>
-          <a className="nav-button" href="/reports"><span className="nav-glyph">▥</span><span className="nav-text">Relatórios</span></a>
-          {session.user.permissions.includes('cash.read') && <a className="nav-button" href="/cash"><span className="nav-glyph">$</span><span className="nav-text">Caixa e vendas</span></a>}
-          {session.user.permissions.includes('users.read') && <a className="nav-button" href="/users"><span className="nav-glyph">☺</span><span className="nav-text">Usuários</span></a>}
-          {session.user.platform_admin && <a className="nav-button" href="/companies"><span className="nav-glyph">▣</span><span className="nav-text">Empresas</span></a>}
-          <button className={`nav-button ${tab === 'products' ? 'active' : ''}`} onClick={() => setTab('products')} type="button"><span className="nav-glyph">▦</span><span className="nav-text">Produtos</span></button>
-          <button className={`nav-button ${tab === 'categories' ? 'active' : ''}`} onClick={() => setTab('categories')} type="button"><span className="nav-glyph">◫</span><span className="nav-text">Categorias</span></button>
-          <button className={`nav-button ${tab === 'addons' ? 'active' : ''}`} onClick={() => setTab('addons')} type="button"><span className="nav-glyph">＋</span><span className="nav-text">Adicionais</span></button>
-        </nav>
-        <div className="sidebar-spacer" />
-        <div className="sidebar-note">Catálogo sincronizado com a unidade selecionada.</div>
-      </aside>
-
-      <div className="main-column">
+    <>
         <header className="topbar">
           <div className="breadcrumb">Catálogo <span aria-hidden="true"> / </span> <strong>{heading}</strong></div>
           <div className="top-actions">
@@ -614,7 +589,6 @@ export default function CatalogPage() {
             </div>
           )}
         </section>
-      </div>
 
       {modal && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
         {modal === 'product' && <form className="modal" onSubmit={saveProduct}>
@@ -656,6 +630,6 @@ export default function CatalogPage() {
         </form>}
       </div>}
       {toast && <div className="toast" role="status">{toast}</div>}
-    </main>
+    </>
   );
 }
