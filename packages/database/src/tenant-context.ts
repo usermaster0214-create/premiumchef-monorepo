@@ -209,9 +209,6 @@ function addScopeToData(
 
   if (operation === 'upsert') {
     scopedArgs.create = apply(scopedArgs.create);
-    if (createPolicies[model]) {
-      scopedArgs.update = apply(scopedArgs.update);
-    }
     return scopedArgs;
   }
 
@@ -248,9 +245,6 @@ export const tenantPrismaExtension = Prisma.defineExtension({
           scopedArgs = addScopeToData(scopedArgs, model, context, operation);
         } else if (operation === 'update' || operation === 'updateMany') {
           scopedArgs = addScopeToWhere(args, scope);
-          if (createPolicies[model]) {
-            scopedArgs = addScopeToData(scopedArgs, model, context, operation);
-          }
         } else if (Object.keys(scope).length > 0) {
           scopedArgs = addScopeToWhere(args, scope);
         }
