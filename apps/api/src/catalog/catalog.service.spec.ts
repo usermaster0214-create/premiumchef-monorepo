@@ -105,6 +105,25 @@ describe('CatalogService', () => {
     );
   });
 
+  it('reactivates an inactive category belonging to the current tenant', async () => {
+    prisma.tenantScoped.category.findFirst.mockResolvedValue({ id: 'category-1' });
+    prisma.tenantScoped.category.update.mockResolvedValue({
+      id: 'category-1',
+      status: ProductStatus.ACTIVE,
+    });
+
+    await service.setCategoryStatus('category-1', ProductStatus.ACTIVE);
+
+    expect(prisma.tenantScoped.category.findFirst).toHaveBeenCalledWith({
+      where: { id: 'category-1' },
+      select: { id: true },
+    });
+    expect(prisma.tenantScoped.category.update).toHaveBeenCalledWith({
+      where: { id: 'category-1' },
+      data: { status: ProductStatus.ACTIVE },
+    });
+  });
+
   it('requires a sale price when adding a product to a new unit', async () => {
     prisma.tenantScoped.product.findFirst.mockResolvedValue({
       id: 'product-1',

@@ -112,7 +112,7 @@ export class CatalogService {
   }
 
   async setCategoryStatus(id: string, status: ProductStatus) {
-    await this.requireCategory(id);
+    await this.requireCategory(id, true);
     return this.prisma.tenantScoped.category.update({
       where: { id },
       data: { status },
@@ -552,12 +552,15 @@ export class CatalogService {
     });
   }
 
-  private async requireCategory(id?: string | null) {
+  private async requireCategory(id?: string | null, includeInactive = false) {
     if (!id) {
       return undefined;
     }
     const category = await this.prisma.tenantScoped.category.findFirst({
-      where: { id, status: ProductStatus.ACTIVE },
+      where: {
+        id,
+        ...(includeInactive ? {} : { status: ProductStatus.ACTIVE }),
+      },
       select: { id: true },
     });
     if (!category) {
