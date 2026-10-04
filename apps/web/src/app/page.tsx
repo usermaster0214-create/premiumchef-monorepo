@@ -500,6 +500,8 @@ export default function CatalogPage() {
           <a className="nav-button" href="/kds"><span className="nav-glyph">▤</span><span className="nav-text">KDS</span></a>
           <a className="nav-button" href="/delivery-ops"><span className="nav-glyph">➜</span><span className="nav-text">Entregas</span></a>
           <a className="nav-button" href="/reports"><span className="nav-glyph">▥</span><span className="nav-text">Relatórios</span></a>
+          {session.user.permissions.includes('cash.read') && <a className="nav-button" href="/cash"><span className="nav-glyph">$</span><span className="nav-text">Caixa e vendas</span></a>}
+          {session.user.permissions.includes('users.read') && <a className="nav-button" href="/users"><span className="nav-glyph">☺</span><span className="nav-text">Usuários</span></a>}
           {session.user.platform_admin && <a className="nav-button" href="/companies"><span className="nav-glyph">▣</span><span className="nav-text">Empresas</span></a>}
           <button className={`nav-button ${tab === 'products' ? 'active' : ''}`} onClick={() => setTab('products')} type="button"><span className="nav-glyph">▦</span><span className="nav-text">Produtos</span></button>
           <button className={`nav-button ${tab === 'categories' ? 'active' : ''}`} onClick={() => setTab('categories')} type="button"><span className="nav-glyph">◫</span><span className="nav-text">Categorias</span></button>

@@ -24,6 +24,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { PurchasesModule } from './purchases/purchases.module';
 import { ReportsModule } from './reports/reports.module';
 import { PlatformModule } from './platform/platform.module';
+import { UsersModule } from './users/users.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -43,6 +44,7 @@ import { HealthController } from './health.controller';
     PurchasesModule,
     ReportsModule,
     PlatformModule,
+    UsersModule,
   ],
   controllers: [HealthController],
   providers: [

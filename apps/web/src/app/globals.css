@@ -215,6 +215,28 @@ tbody tr:hover { background: #fbfdfb; }
 .table-delete-button { border: 1px solid #efd6d2; border-radius: 5px; background: #fff7f5; color: #a33d34; cursor: pointer; font-size: 11px; font-weight: 700; min-height: 36px; padding: 0 9px; }
 .table-delete-button:disabled { cursor: wait; opacity: .55; }
 .companies-table { max-width: 1440px; margin: 0 auto; }
+.page-wrap { max-width: 1440px; margin: 0 auto; }
+.page-tabs { margin-bottom: 16px; }
+.panel { border: 1px solid var(--line); border-radius: 8px; background: #fff; margin-bottom: 16px; padding: 16px; }
+.panel h2 { margin: 0 0 12px; font-family: 'Manrope', sans-serif; font-size: 15px; }
+.panel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.panel-grid .panel { margin-bottom: 0; }
+.inline-form { display: grid; gap: 10px; }
+.inline-form input, .inline-form select, .sales-toolbar select { height: 40px; border: 1px solid var(--line); border-radius: 5px; background: #fff; padding: 0 10px; }
+.sales-toolbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; }
+.cash-form { max-width: 420px; }
+.close-button { min-height: 40px; }
+.diff-ok { color: var(--green); }
+.diff-bad { color: #a33d34; }
+.chip { display: inline-block; border-radius: 4px; background: var(--green-pale); color: var(--green); font-size: 10px; font-weight: 700; margin: 0 4px 4px 0; padding: 4px 7px; }
+.role-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 13px; }
+.role-card { border: 1px solid var(--line); border-top: 4px solid #6fa47f; border-radius: 8px; background: #fff; padding: 15px; }
+.role-card h2 { margin: 0; font-family: 'Manrope', sans-serif; font-size: 15px; }
+.role-card p { color: var(--muted); font-size: 12px; margin: 8px 0; min-height: 18px; }
+.role-perms { color: #52645a; font-size: 11px; font-weight: 700; }
+.perm-groups { display: grid; gap: 14px; }
+.perm-group h3 { color: #52645a; font-size: 11px; margin: 0 0 6px; text-transform: uppercase; }
+.perm-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px; }
 .kds-shell { min-height: 100vh; background: var(--paper); padding: 30px 34px 48px; }
 .kds-board { display: grid; max-width: 1440px; min-height: 640px; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 12px; margin: 0 auto; }
 .kds-column { border: 1px solid var(--line); border-radius: 8px; background: #eaf0eb; padding: 10px; }

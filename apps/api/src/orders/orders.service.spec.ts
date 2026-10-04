@@ -34,6 +34,7 @@ describe('OrdersService', () => {
             status: OrderStatus.PENDING,
           }),
           update: jest.fn().mockResolvedValue({ id: 'order-1', total: 12 }),
+          findMany: jest.fn().mockResolvedValue([]),
         },
         orderItem: {
           create: jest.fn().mockImplementation(async ({ data }) => ({
@@ -62,6 +63,37 @@ describe('OrdersService', () => {
         callback(prisma.tenantScoped),
     );
     service = new OrdersService(prisma);
+  });
+
+  it('lists sales newest first with period and status filters and a bounded page size', async () => {
+    await service.list({
+      from: '2026-10-04T00:00:00.000Z',
+      to: '2026-10-04T23:59:59.999Z',
+      status: OrderStatus.COMPLETED,
+      limit: 50,
+    });
+
+    expect(prisma.tenantScoped.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          status: OrderStatus.COMPLETED,
+          createdAt: {
+            gte: new Date('2026-10-04T00:00:00.000Z'),
+            lte: new Date('2026-10-04T23:59:59.999Z'),
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+    );
+  });
+
+  it('defaults the sales listing to 100 rows without filters', async () => {
+    await service.list({});
+
+    expect(prisma.tenantScoped.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: {}, take: 100 }),
+    );
   });
 
   it('uses database prices for immutable order snapshots and creates KDS ticket', async () => {

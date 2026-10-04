@@ -1,14 +1,21 @@
-import { Body, Controller, Param, ParseUUIDPipe, Patch, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req } from '@nestjs/common';
 import { AuthenticatedRequest } from '../auth/auth.types';
 import { CurrentTenant, CurrentTenantContext } from '../auth/current-tenant.decorator';
 import { RequirePermissions } from '../auth/permissions.guard';
 import { CreateOrderDto, OrderItemDto } from './dto/create-order.dto';
+import { ListOrdersDto } from './dto/list-orders.dto';
 import { TransferOrderTableDto } from './dto/table-order.dto';
 import { OrdersService } from './orders.service';
 
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
+
+  @Get()
+  @RequirePermissions('orders.read')
+  list(@Query() query: ListOrdersDto): Promise<unknown> {
+    return this.ordersService.list(query);
+  }
 
   @Post()
   @RequirePermissions('orders.create')

@@ -14,6 +14,7 @@ import {
 import { CurrentTenantContext } from '../auth/current-tenant.decorator';
 import { PrismaService } from '../database/prisma.service';
 import { CreateOrderDto, OrderItemDto } from './dto/create-order.dto';
+import { ListOrdersDto } from './dto/list-orders.dto';
 import { TransferOrderTableDto } from './dto/table-order.dto';
 
 type OrderActor = CurrentTenantContext & { userId?: string; deliveryFee?: number };
@@ -25,6 +26,33 @@ function cents(value: number | { toString(): string }) {
 @Injectable()
 export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
+
+  list(query: ListOrdersDto): Promise<unknown> {
+    const createdAt = {
+      ...(query.from ? { gte: new Date(query.from) } : {}),
+      ...(query.to ? { lte: new Date(query.to) } : {}),
+    };
+    return this.prisma.tenantScoped.order.findMany({
+      where: {
+        ...(query.status ? { status: query.status } : {}),
+        ...(Object.keys(createdAt).length ? { createdAt } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: query.limit ?? 100,
+      select: {
+        id: true,
+        orderNumber: true,
+        orderType: true,
+        status: true,
+        total: true,
+        createdAt: true,
+        completedAt: true,
+        user: { select: { name: true } },
+        payments: { select: { paymentMethod: true, amount: true, status: true } },
+        _count: { select: { orderItems: true } },
+      },
+    });
+  }
 
   async create(dto: CreateOrderDto, actor: OrderActor): Promise<unknown> {
     if (!dto.items.length) {

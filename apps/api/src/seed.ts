@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import * as argon2 from 'argon2';
 import { PrismaClient, UserStatus } from '@premiumchef/database';
-import { ALL_PERMISSIONS } from './platform/default-roles';
+import { ALL_PERMISSIONS, DEFAULT_ROLES } from './platform/default-roles';
 
 const prisma = new PrismaClient();
 
@@ -37,6 +37,12 @@ async function main() {
     await prisma.rolePermission.upsert({ where: { roleId_permissionId: { roleId: role.id, permissionId: permission.id } }, update: {}, create: { roleId: role.id, permissionId: permission.id } });
   }
   await prisma.userRole.upsert({ where: { userId_roleId: { userId: user.id, roleId: role.id } }, update: {}, create: { userId: user.id, roleId: role.id } });
+  for (const preset of DEFAULT_ROLES.filter((candidate) => candidate.name !== 'ADMIN')) {
+    if (await prisma.role.findFirst({ where: { tenantId: tenant.id, name: preset.name } })) continue;
+    const created = await prisma.role.create({ data: { tenantId: tenant.id, name: preset.name, description: preset.description } });
+    const found = await prisma.permission.findMany({ where: { name: { in: [...preset.permissions] } }, select: { id: true } });
+    await prisma.rolePermission.createMany({ data: found.map(({ id }) => ({ roleId: created.id, permissionId: id })) });
+  }
   await prisma.cashRegister.upsert({ where: { id: '00000000-0000-4000-8000-000000000003' }, update: { name: 'Caixa Principal', unitId: unit.id }, create: { id: '00000000-0000-4000-8000-000000000003', unitId: unit.id, name: 'Caixa Principal' } });
   await prisma.restaurantTable.upsert({ where: { id: '00000000-0000-4000-8000-000000000004' }, update: { number: 1, unitId: unit.id }, create: { id: '00000000-0000-4000-8000-000000000004', unitId: unit.id, number: 1, capacity: 4 } });
   await prisma.deliveryZone.upsert({
